@@ -5,53 +5,43 @@ class ProductManager {
     this.path = path;
     this.products = [];
     this.lastProductId = 0;
-
-    if (fs.existsSync(this.path)) {
-      const data = fs.readFileSync(this.path);
-      if (data) {
-        this.products = JSON.parse(data);
-        this.lastProductId = this.products[this.products.length - 1].id;
-      }
-    }
   }
 
-  _saveProducts() {
-    fs.writeFileSync(this.path, JSON.stringify(this.products));
-  }
-
-  addProduct(product) {
+  addProduct(title, description, price, thumbnail, code, stock) {
     // Validar que todos los campos sean obligatorios
-    if (!product.title || !product.description || !product.price || !product.thumbnail || !product.code || !product.stock) {
+    if (!title || !description || !price || !thumbnail || !code || !stock) {
       console.log("Error: Todos los campos son obligatorios");
       return;
     }
 
     // Validar que el campo "code" no se repita
-    if (this.products.some(p => p.code === product.code)) {
+    if (this.products.some(product => product.code === code)) {
       console.log("Error: El código del producto ya existe");
       return;
     }
 
     const newProduct = {
       id: ++this.lastProductId,
-      title: product.title,
-      description: product.description,
-      price: product.price,
-      thumbnail: product.thumbnail,
-      code: product.code,
-      stock: product.stock
+      title,
+      description,
+      price,
+      thumbnail,
+      code,
+      stock
     };
 
     this.products.push(newProduct);
-    this._saveProducts();
+    this.saveProducts();
   }
 
   getProducts() {
+    this.loadProducts();
     return this.products;
   }
 
   getProductById(id) {
-    const product = this.products.find(p => p.id === id);
+    this.loadProducts();
+    const product = this.products.find(product => product.id === id);
 
     if (product) {
       return product;
@@ -60,71 +50,74 @@ class ProductManager {
     }
   }
 
-  updateProduct(id, productData) {
-    const productIndex = this.products.findIndex(p => p.id === id);
+  updateProduct(id, updatedFields) {
+    this.loadProducts();
+    const productIndex = this.products.findIndex(product => product.id === id);
 
-    if (productIndex === -1) {
+    if (productIndex !== -1) {
+      this.products[productIndex] = { ...this.products[productIndex], ...updatedFields };
+      this.saveProducts();
+    } else {
       console.log("Error: Producto no encontrado");
-      return;
     }
-
-    this.products[productIndex] = {
-      ...this.products[productIndex],
-      ...productData,
-      id // asegurarse de que no se cambie el id
-    };
-
-    this._saveProducts();
   }
 
   deleteProduct(id) {
-    const productIndex = this.products.findIndex(p => p.id === id);
+    this.loadProducts();
+    const productIndex = this.products.findIndex(product => product.id === id);
 
-    if (productIndex === -1) {
+    if (productIndex !== -1) {
+      this.products.splice(productIndex, 1);
+      this.saveProducts();
+    } else {
       console.log("Error: Producto no encontrado");
-      return;
     }
+  }
 
-    this.products.splice(productIndex, 1);
-    this._saveProducts();
+  loadProducts() {
+    try {
+      const data = fs.readFileSync(this.path, 'utf8');
+      this.products = JSON.parse(data);
+    } catch (error) {
+      this.products = [];
+    }
+  }
+
+  saveProducts() {
+    fs.writeFileSync(this.path, JSON.stringify(this.products));
   }
 }
 
-// Ejemplo de uso:
-const manager = new ProductManager('./products.json');
-manager.addProduct({
-  title: "Camiseta",
-  description: "Camiseta de algodón",
-  price: 19.99,
-  thumbnail: "/path/to/thumbnail1.jpg",
-  code: "123",
-  stock: 10
-});
-manager.addProduct({
-  title: "Pantalón",
-  description: "Pantalón vaquero",
-  price: 29.99,
-  thumbnail: "/path/to/thumbnail2.jpg",
-  code: "456",
-  stock: 5
-});
-manager.addProduct({
-  title: "Zapatos",
-  description: "Zapatos de cuero",
-  price: 59.99,
-  thumbnail: "/path/to/thumbnail3.jpg",
-  code: "789",
-  stock: 3
-});
+// Tests
+const manager = new ProductManager('products.json');
 
-const products = manager.getProducts();
-console.log(products);
+// Test 1
+console.log("Test 1:");
+console.log(manager.getProducts()); // []
 
-const productById = manager.getProductById(2);
-console.log(productById);
+// Test 2
+console.log("Test 2:");
+manager.addProduct("producto prueba", "Este es un producto prueba", 200, "Sin imagen", "abc123", 25);
 
-manager.updateProduct(2, { price: 39.99 });
-console.log(manager.getProductById(2));
+// Test 3
+console.log("Test 3:");
+console.log(manager.getProducts()); // [{ id: 1, title: 'producto prueba', description: 'Este es un producto prueba', price: 200, thumbnail: 'Sin imagen', code: 'abc123', stock: 25 }]
 
+// Test 4
+console.log("Test 4:");
+const productById = manager.getProductById(1);
+console.log(productById); // { id: 1, title: 'producto prueba', description: 'Este es un producto prueba', price: 200, thumbnail: 'Sin imagen', code: 'abc123', stock: 25 }
+
+// Test 5
+console.log("Test 5:");
+const nonExistentProduct = manager.getProductById(5); // Producto no encontrado, muestra un error en la consola
+
+// Test 6
+console.log("Test 6:");
+manager.updateProduct(1, { price: 250, stock: 20 });
+console.log(manager.getProducts()); // [{ id: 1, title: 'producto prueba', description: 'Este es un producto prueba', price: 250, thumbnail: 'Sin imagen', code: 'abc123', stock: 20 }]
+
+// Test 7
+console.log("Test 7:");
 manager.deleteProduct(1);
-console.log
+console.log(manager.getProducts()); // []
