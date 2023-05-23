@@ -1,3 +1,4 @@
+const exp = require('constants');
 const fs = require('fs');
 
 class ProductManager {
@@ -88,36 +89,5 @@ class ProductManager {
   }
 }
 
-// Tests
-const manager = new ProductManager('products.json');
+module.exports = ProductManager;
 
-// Test 1
-console.log("Test 1:");
-console.log(manager.getProducts()); // []
-
-// Test 2
-console.log("Test 2:");
-manager.addProduct("producto prueba", "Este es un producto prueba", 200, "Sin imagen", "abc123", 25);
-
-// Test 3
-console.log("Test 3:");
-console.log(manager.getProducts()); // [{ id: 1, title: 'producto prueba', description: 'Este es un producto prueba', price: 200, thumbnail: 'Sin imagen', code: 'abc123', stock: 25 }]
-
-// Test 4
-console.log("Test 4:");
-const productById = manager.getProductById(1);
-console.log(productById); // { id: 1, title: 'producto prueba', description: 'Este es un producto prueba', price: 200, thumbnail: 'Sin imagen', code: 'abc123', stock: 25 }
-
-// Test 5
-console.log("Test 5:");
-const nonExistentProduct = manager.getProductById(5); // Producto no encontrado, muestra un error en la consola
-
-// Test 6
-console.log("Test 6:");
-manager.updateProduct(1, { price: 250, stock: 20 });
-console.log(manager.getProducts()); // [{ id: 1, title: 'producto prueba', description: 'Este es un producto prueba', price: 250, thumbnail: 'Sin imagen', code: 'abc123', stock: 20 }]
-
-// Test 7
-console.log("Test 7:");
-manager.deleteProduct(1);
-console.log(manager.getProducts()); // []
